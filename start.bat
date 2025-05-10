@@ -2,7 +2,7 @@
 echo 正在启动FlowmapCanvas...
 
 REM 使用项目自带的Python环境
-set PYTHON_PATH=env\Python\python.exe
+set PYTHON_PATH=venv\Python\python.exe
 
 REM 检查Python环境
 if not exist "%PYTHON_PATH%" (

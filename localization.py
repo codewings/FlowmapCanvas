@@ -19,41 +19,41 @@ TRANSLATIONS = {
     "menu_file": {"zh_CN": "文件", "en_US": "File"},
     "menu_edit": {"zh_CN": "编辑", "en_US": "Edit"},
     "menu_settings": {"zh_CN": "设置", "en_US": "Settings"},
-    
+
     # 文件菜单项
     "import_background": {"zh_CN": "导入底图", "en_US": "Import Background"},
     "export_flowmap": {"zh_CN": "导出Flowmap", "en_US": "Export Flowmap"},
-    
+
     # 编辑菜单项
     "undo": {"zh_CN": "撤销", "en_US": "Undo"},
     "redo": {"zh_CN": "重做", "en_US": "Redo"},
-    
+
     # 设置菜单项
     "toggle_theme": {"zh_CN": "切换深色/浅色模式", "en_US": "Toggle Dark/Light Mode"},
     "high_res_mode": {"zh_CN": "高精度模式 (2048x2048)", "en_US": "High Resolution Mode (2048x2048)"},
-    
+
     # 窗口标题
     "app_title": {"zh_CN": "Flowmap Canvas", "en_US": "Flowmap Canvas"},
-    
+
     # 笔刷参数组
     "brush_parameters": {"zh_CN": "笔刷参数", "en_US": "Brush Parameters"},
     "brush_size": {"zh_CN": "笔刷大小", "en_US": "Brush Size"},
     "flow_strength": {"zh_CN": "流动强度", "en_US": "Flow Strength"},
     "speed_sensitivity": {"zh_CN": "速度灵敏度", "en_US": "Speed Sensitivity"},
-    
+
     # 模式设置组
     "mode_settings": {"zh_CN": "模式设置", "en_US": "Mode Settings"},
     "enable_seamless": {"zh_CN": "启用四方连续贴图", "en_US": "Enable Seamless Tiling"},
     "enable_preview_repeat": {"zh_CN": "启用预览重复模式", "en_US": "Enable Preview Repeat Mode"},
-    
+
     # 流动效果控制组
     "flow_effect_control": {"zh_CN": "流动效果控制", "en_US": "Flow Effect Control"},
     "flow_speed": {"zh_CN": "流动速度", "en_US": "Flow Speed"},
     "flow_distance": {"zh_CN": "流动距离", "en_US": "Flow Distance"},
-    
+
     # 按钮
     "fill_canvas": {"zh_CN": "填充画布", "en_US": "Fill Canvas"},
-    
+
     # 快捷键组
     "shortcuts": {"zh_CN": "快捷键", "en_US": "Shortcuts"},
     "shortcut_left_click": {"zh_CN": "左键: 绘制流向", "en_US": "Left Click: Draw Flow"},
@@ -65,7 +65,7 @@ TRANSLATIONS = {
     "shortcut_ctrl_shift_z": {"zh_CN": "Ctrl+Shift+Z: 重做", "en_US": "Ctrl+Shift+Z: Redo"},
     "shortcut_alt_horiz": {"zh_CN": "Alt+左右拖动: 调整笔刷大小", "en_US": "Alt+Horizontal Drag: Adjust Brush Size"},
     "shortcut_alt_vert": {"zh_CN": "Alt+上下拖动: 调整流动强度", "en_US": "Alt+Vertical Drag: Adjust Flow Strength"},
-    
+
     # 状态消息
     "ready": {"zh_CN": "就绪", "en_US": "Ready"},
     "brush_status": {"zh_CN": "笔刷大小: {size}px | 强度: {strength}", "en_US": "Brush Size: {size}px | Strength: {strength}"},
@@ -84,7 +84,7 @@ TRANSLATIONS = {
     "background_loaded": {"zh_CN": "已加载底图: {path}", "en_US": "Background Loaded: {path}"},
     "default_background_loaded": {"zh_CN": "已加载默认底图: {path}", "en_US": "Default Background Loaded: {path}"},
     "flowmap_exported": {"zh_CN": "Flowmap已导出至: {path} (分辨率: {res}, 使用{interp}, API模式: {api})", "en_US": "Flowmap Exported to: {path} (Resolution: {res}, Using {interp}, API Mode: {api})"},
-    
+
     # 对话框标题和选项
     "export_settings": {"zh_CN": "导出设置", "en_US": "Export Settings"},
     "export_resolution": {"zh_CN": "导出分辨率:", "en_US": "Export Resolution:"},
@@ -102,13 +102,14 @@ TRANSLATIONS = {
     "png_files": {"zh_CN": "PNG文件 (*.png)", "en_US": "PNG files (*.png)"},
     "jpg_files": {"zh_CN": "JPEG文件 (*.jpg *.jpeg)", "en_US": "JPEG files (*.jpg *.jpeg)"},
     "bmp_files": {"zh_CN": "BMP文件 (*.bmp)", "en_US": "BMP files (*.bmp)"},
+    "exr_files": {"zh_CN": "EXR文件 (*.exr)", "en_US": "EXR files (*.exr)"},
     "custom_size": {"zh_CN": "自定义", "en_US": "Custom"},
     "width_label": {"zh_CN": "宽度:", "en_US": "Width:"},
     "height_label": {"zh_CN": "高度:", "en_US": "Height:"},
     "preset_resolution": {"zh_CN": "预设分辨率:", "en_US": "Preset Resolution:"},
     "lock_aspect_ratio": {"zh_CN": "锁定长宽比", "en_US": "Lock Aspect Ratio"},
     "other_settings": {"zh_CN": "其他设置", "en_US": "Other Settings"},
-    
+
     # 错误消息
     "opengl_error": {"zh_CN": "错误：OpenGL 3.3上下文初始化失败", "en_US": "Error: OpenGL 3.3 Context Initialization Failed"},
     "invalid_texture_size": {"zh_CN": "无效的纹理尺寸", "en_US": "Invalid Texture Size"},
@@ -118,13 +119,13 @@ TRANSLATIONS = {
 
 class Translator:
     """翻译管理器类，负责提供翻译服务"""
-    
+
     def __init__(self):
         self.current_language = Language.CHINESE  # 默认为中文
-        
+
         # 尝试从配置文件加载用户首选语言
         self._load_preferences()
-    
+
     def _load_preferences(self):
         """从配置文件加载用户首选语言"""
         try:
@@ -139,7 +140,7 @@ class Translator:
                                 break
         except Exception as e:
             print(f"加载语言首选项时出错: {e}")
-    
+
     def _save_preferences(self):
         """保存用户首选语言到配置文件"""
         try:
@@ -147,14 +148,14 @@ class Translator:
             if os.path.exists("app_settings.json"):
                 with open("app_settings.json", "r", encoding="utf-8") as f:
                     settings = json.load(f)
-            
+
             settings["language"] = self.current_language.value
-            
+
             with open("app_settings.json", "w", encoding="utf-8") as f:
                 json.dump(settings, f, ensure_ascii=False, indent=4)
         except Exception as e:
             print(f"保存语言首选项时出错: {e}")
-    
+
     def set_language(self, language):
         """设置当前语言"""
         if isinstance(language, Language):
@@ -162,7 +163,7 @@ class Translator:
             self._save_preferences()
         else:
             raise ValueError("Language must be a Language enum value")
-    
+
     def toggle_language(self):
         """切换语言 (中文 <-> 英文)"""
         if self.current_language == Language.CHINESE:
@@ -171,27 +172,27 @@ class Translator:
             self.current_language = Language.CHINESE
         self._save_preferences()
         return self.current_language
-    
+
     def tr(self, key, **kwargs):
         """翻译指定的key，可选替换参数"""
         if key not in TRANSLATIONS:
             return key  # 如果没有找到翻译，返回原始key
-        
+
         lang_str = self.current_language.value
         if lang_str not in TRANSLATIONS[key]:
             # 如果当前语言没有对应翻译，尝试使用中文
             lang_str = Language.CHINESE.value
-        
+
         text = TRANSLATIONS[key][lang_str]
-        
+
         # 如果有替换参数，使用format进行替换
         if kwargs:
             try:
                 return text.format(**kwargs)
             except:
                 return text
-        
+
         return text
 
 # 创建全局翻译器实例
-translator = Translator() 
+translator = Translator()

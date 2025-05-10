@@ -10,6 +10,7 @@ import ctypes
 import time
 import enum
 import os
+import sys
 
 # 鼠标状态枚举，用于优化状态检查
 class MouseState(enum.Enum):
@@ -59,13 +60,18 @@ def create_shader_program(vertex_source, fragment_source):
         vertex_shader = shaders.compileShader(vertex_source, GL_VERTEX_SHADER)
         fragment_shader = shaders.compileShader(fragment_source, GL_FRAGMENT_SHADER)
 
-        # 注意：PyOpenGL 的 compileProgram 会自动处理附加和链接
-        # 它在失败时会引发 RuntimeError，并通常包含日志信息
-        program = shaders.compileProgram(vertex_shader, fragment_shader)
+        program = None
+        if sys.platform == "darwin":
+            # TODO
+            program = shaders.compileProgram(vertex_shader, fragment_shader, validate=False)
+        else:
+            # 注意：PyOpenGL 的 compileProgram 会自动处理附加和链接
+            # 它在失败时会引发 RuntimeError，并通常包含日志信息
+            program = shaders.compileProgram(vertex_shader, fragment_shader)
 
-        # 编译后可以立即删除着色器对象 (它们已链接到程序中)
-        glDeleteShader(vertex_shader)
-        glDeleteShader(fragment_shader)
+            # 编译后可以立即删除着色器对象 (它们已链接到程序中)
+            glDeleteShader(vertex_shader)
+            glDeleteShader(fragment_shader)
 
         print(f"Shader program compiled and linked successfully. ID: {program}")
         return program
@@ -243,36 +249,36 @@ class FlowmapCanvas(QOpenGLWidget):
             print("GLSL Version:", glGetString(GL_SHADING_LANGUAGE_VERSION).decode(errors='ignore'))
             print("Vendor:", glGetString(GL_VENDOR).decode(errors='ignore'))
             print("Renderer:", glGetString(GL_RENDERER).decode(errors='ignore'))
-            
+
             # 设置清空颜色
             glClearColor(0.1, 0.1, 0.1, 1.0)
             glEnable(GL_BLEND)
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        
+
             # 初始化顶点缓冲对象
             self.init_quad_buffers()
-            
+
             # 初始化纹理
             self.init_textures()
-            
+
             # 初始化着色器
             self.init_shaders()
-            
+
             # 设置初始宽高比
             self.texture_original_aspect_ratio = self.texture_size[0] / self.texture_size[1]
             self.window_width = self.width() or 800
             self.window_height = self.height() or 600
-            
+
             # 更新预览窗口大小
             self.update_preview_size()
-            
+
             # 设置动画计时器
             self.start_time = time.time()
             self.last_anim_update_time = time.time()
-            
+
             # 发送OpenGL初始化完成信号
             self.opengl_initialized.emit()
-            
+
             # 初始化完成后，立即强制更新一次
             self.update_aspect_ratio()
             self.update()
@@ -351,7 +357,7 @@ class FlowmapCanvas(QOpenGLWidget):
         # 检查 shader program ID 和 VAO 是否有效
         if self.shader_program_id == 0 or self.vao == 0:
             return
-            
+
         # 使用 shader program
         try:
             glUseProgram(self.shader_program_id)
@@ -361,7 +367,7 @@ class FlowmapCanvas(QOpenGLWidget):
             return
 
         glViewport(0, 0, self.width(), self.height())
-        
+
         # --- 获取 Uniform 位置 (最好在 init_shaders 后缓存) ---
         try:
             baseMapLoc = glGetUniformLocation(self.shader_program_id, "baseMap")
@@ -389,10 +395,10 @@ class FlowmapCanvas(QOpenGLWidget):
             base_tex_to_bind = self.base_texture_id if self.base_texture_id != 0 else 0 # Use 0 if invalid
             glBindTexture(GL_TEXTURE_2D, base_tex_to_bind)
             if baseMapLoc != -1: glUniform1i(baseMapLoc, 0) # Texture unit 0
-            
+
             has_valid_base = self.has_base_map and self.base_texture_id != 0
             if hasBaseMapLoc != -1: glUniform1i(hasBaseMapLoc, 1 if has_valid_base else 0) # Bool to int
-        
+
             glActiveTexture(GL_TEXTURE1)
             flow_tex_to_bind = self.flowmap_texture_id if self.flowmap_texture_id != 0 else 0 # Use 0 if invalid
             glBindTexture(GL_TEXTURE_2D, flow_tex_to_bind)
@@ -435,58 +441,58 @@ class FlowmapCanvas(QOpenGLWidget):
         # 检查尺寸有效性
         if w <= 0 or h <= 0:
             return
-            
+
         # 保存当前窗口尺寸
         self.window_width = w
         self.window_height = h
-            
+
         # 设置OpenGL视口
         glViewport(0, 0, w, h)
-        
+
         # 确保纹理宽高比存在
         if not hasattr(self, 'texture_original_aspect_ratio') or self.texture_original_aspect_ratio <= 0:
             if self.texture_size[0] > 0 and self.texture_size[1] > 0:
                 self.texture_original_aspect_ratio = self.texture_size[0] / self.texture_size[1]
             else:
                 self.texture_original_aspect_ratio = 1.0
-        
+
         # 检查当前窗口宽高比与纹理宽高比是否一致
         current_aspect_ratio = w / h
-        
+
         # 如果宽高比差异过大（容差为0.01），则强制调整窗口大小为等比缩放
         if abs(current_aspect_ratio - self.texture_original_aspect_ratio) > 0.01:
             # 静态变量防止递归
             if not hasattr(self, '_is_adjusting_size') or not self._is_adjusting_size:
                 self._is_adjusting_size = True
-                
+
                 # 检查父窗口
                 parent = self.parent()
                 if isinstance(parent, QMainWindow):
                     # 保持宽度不变，调整高度
                     new_height = int(w / self.texture_original_aspect_ratio)
-                    
+
                     # 设置固定高度确保等比例
                     self.setFixedHeight(new_height)
-                    
+
                     print(f"调整窗口大小以保持等比例: {w}x{new_height}，纹理比例: {self.texture_original_aspect_ratio:.3f}")
-                    
+
                     # 更新内部状态
                     self.window_height = new_height
-                    
+
                     # 重置标志
                     QTimer.singleShot(0, lambda: setattr(self, '_is_adjusting_size', False))
                     return
                 self._is_adjusting_size = False
-        
+
         # 更新纵横比校正
         self.update_aspect_ratio()
-        
+
         # 更新预览窗口大小
         self.update_preview_size()
-        
+
         # 发出大小调整信号
         self.resized.emit()
-        
+
         # 强制重绘
         self.update()
 
@@ -510,7 +516,7 @@ class FlowmapCanvas(QOpenGLWidget):
 
         # 缩放后的新场景坐标应该和缩放前的相同，计算所需的新偏移
         old_offset = self.main_view_offset
-        
+
         # 正确的偏移量计算公式
         new_offset = QPointF(
             old_offset.x() + 0.5 * (1.0/new_scale - 1.0/self.main_view_scale),
@@ -540,7 +546,7 @@ class FlowmapCanvas(QOpenGLWidget):
         elif event.key() == Qt.Key_Alt:
             # 按下Alt键，标记为控制模式
             self.alt_pressed = True
-            
+
             # 始终使用当前鼠标位置作为Alt键按下时的位置
             cursor_pos = self.mapFromGlobal(QCursor.pos())
             # 确保位置在widget内
@@ -764,7 +770,7 @@ class FlowmapCanvas(QOpenGLWidget):
                 self.is_erasing = False
                 # 发出绘制结束信号
                 self.drawingFinished.emit()
-                
+
             elif event.button() == Qt.RightButton and self.mouse_state == MouseState.ERASING:
                 # 仅在状态为擦除时处理右键释放
                 self.mouse_state = MouseState.IDLE
@@ -772,7 +778,7 @@ class FlowmapCanvas(QOpenGLWidget):
                 self.is_erasing = False
                 # 发出绘制结束信号
                 self.drawingFinished.emit()
-                
+
             # 处理中键释放 - 结束拖拽
             elif event.button() == Qt.MiddleButton:
                 if self.mouse_state == MouseState.DRAG_PREVIEW:
@@ -1159,19 +1165,19 @@ class FlowmapCanvas(QOpenGLWidget):
             img = Image.open(file_path).convert('RGBA')
             width, height = img.size
             print(f"Loading base image: {file_path}, size: {width}x{height}")
-            
+
             # 保存原始图像尺寸
             self.original_image_size = (width, height)
-            
+
             # 更新纹理大小以匹配图像尺寸
             self.texture_size = (width, height)
-            
+
             # 获取图像数据
             img_data = np.array(img, dtype=np.uint8)
-            
+
             # 翻转Y轴，确保在OpenGL中正确显示
             img_data = np.flipud(img_data)
-            
+
             # 重新初始化flowmap数据以匹配新的图像尺寸
             self.flowmap_data = np.zeros((height, width, 4), dtype=np.float32)
             self.flowmap_data[..., 0] = 0.5  # 初始化为 (0, 0) 向量 -> (0.5, 0.5) 颜色
@@ -1186,7 +1192,7 @@ class FlowmapCanvas(QOpenGLWidget):
                 except GLError as e:
                     print(f"Warning: Failed to delete existing texture: {e}")
                 self.base_texture_id = 0
-                
+
             # 如果flowmap纹理已存在，也需要更新其大小
             if self.flowmap_texture_id != 0:
                 try:
@@ -1233,17 +1239,17 @@ class FlowmapCanvas(QOpenGLWidget):
                 return
             finally:
                 glBindTexture(GL_TEXTURE_2D, 0)
-                
+
             # 创建新的flowmap纹理
             flow_texture_id = glGenTextures(1)
             self.flowmap_texture_id = flow_texture_id
-            
+
             if self.flowmap_texture_id == 0:
                 print("Error: Failed to generate flowmap texture ID.")
                 QMessageBox.critical(self, "OpenGL Error", "Failed to create flowmap texture object.")
                 self.doneCurrent()
                 return
-                
+
             # 上传flowmap纹理数据
             try:
                 glBindTexture(GL_TEXTURE_2D, self.flowmap_texture_id)
@@ -1253,7 +1259,7 @@ class FlowmapCanvas(QOpenGLWidget):
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-                
+
                 # 检查上传是否成功
                 error = glGetError()
                 if error != GL_NO_ERROR:
@@ -1340,6 +1346,62 @@ class FlowmapCanvas(QOpenGLWidget):
         # 更新预览窗口大小
         self.update_preview_size()
 
+    def export_flowmap_exr(self, file_path, target_size=None, use_bilinear=True, invert_r=False, invert_g=False):
+        os.environ["OPENCV_IO_ENABLE_OPENEXR"] = "1"
+
+        import cv2
+
+        # 获取当前纹理尺寸
+        texture_height, texture_width = self.flowmap_data.shape[:2]
+
+        # 如果未指定目标尺寸，则使用当前纹理尺寸
+        if target_size is None:
+            target_size = (texture_width, texture_height)
+
+        # 使用NumPy的向量化操作快速转换数据
+        # 1. 提取R和G通道并缩放到[0,255]范围
+        r_channel = self.flowmap_data[..., 0]
+        g_channel = self.flowmap_data[..., 1]
+
+        # 应用通道反转
+        if invert_r:
+            r_channel = 1.0 - r_channel
+        if invert_g:
+            g_channel = 1.0 - g_channel
+
+        # 转换为float32
+        r_channel = (r_channel).astype(np.float32)
+        g_channel = (g_channel).astype(np.float32)
+
+        # 2. 创建BGR数组
+        data = np.zeros((texture_height, texture_width, 3), dtype=np.float32)
+        # B通道保持为0
+        data[..., 1] = g_channel  # G通道
+        data[..., 2] = r_channel  # R通道
+
+        # 3. 翻转Y轴以匹配最终图像格式
+        data = np.flipud(data)
+
+        # 如果指定了目标尺寸且与当前尺寸不同，则进行缩放
+        if target_size and (texture_width, texture_height) != target_size:
+            if use_bilinear:
+                # 使用双线性插值
+                resample_method = cv2.INTER_LINEAR
+            else:
+                # 使用最近邻插值
+                resample_method = cv2.INTER_NEAREST
+
+            data = cv2.resize(data, target_size, interpolation=resample_method)
+            print(f"已将图像从 {texture_width}x{texture_height} 缩放到 {target_size[0]}x{target_size[1]} 使用{resample_method}")
+
+        # 创建EXR图像
+        try:
+            # 保存为 EXR 文件
+            cv2.imwrite(file_path, data)
+            print(f"成功导出Flowmap为EXR文件: {file_path}")
+        except Exception as e:
+            print(f"导出EXR文件时出错: {e}")
+
     def export_flowmap(self, file_path, target_size=None, use_bilinear=True, invert_r=False, invert_g=False):
         """
         导出Flowmap为不同格式的图片文件
@@ -1355,37 +1417,45 @@ class FlowmapCanvas(QOpenGLWidget):
         import numpy as np
         import os
         import time
-        
+
+        # 获取文件扩展名并转换为小写
+        _, file_ext = os.path.splitext(file_path)
+        file_ext = file_ext.lower()
+
+        if file_ext == '.exr':
+            self.export_flowmap_exr(file_path, target_size, use_bilinear, invert_r, invert_g)
+            return
+
         start_time = time.time()
 
         # 获取当前纹理尺寸
         texture_height, texture_width = self.flowmap_data.shape[:2]
-        
+
         # 如果未指定目标尺寸，则使用当前纹理尺寸
         if target_size is None:
             target_size = (texture_width, texture_height)
-        
+
         # 使用NumPy的向量化操作快速转换数据
         # 1. 提取R和G通道并缩放到[0,255]范围
         r_channel = self.flowmap_data[..., 0]
         g_channel = self.flowmap_data[..., 1]
-        
+
         # 应用通道反转
         if invert_r:
             r_channel = 1.0 - r_channel
         if invert_g:
             g_channel = 1.0 - g_channel
-            
+
         # 转换为uint8
         r_channel = (r_channel * 255).astype(np.uint8)
         g_channel = (g_channel * 255).astype(np.uint8)
-        
+
         # 2. 创建RGB数组
         data = np.zeros((texture_height, texture_width, 3), dtype=np.uint8)
         data[..., 0] = r_channel  # R通道
         data[..., 1] = g_channel  # G通道
         # B通道保持为0
-        
+
         # 3. 翻转Y轴以匹配最终图像格式
         data = np.flipud(data)
 
@@ -1404,9 +1474,6 @@ class FlowmapCanvas(QOpenGLWidget):
             img = img.resize(target_size, resample_method)
             print(f"已将图像从 {texture_width}x{texture_height} 缩放到 {target_size[0]}x{target_size[1]} 使用{resample_method}")
 
-        # 获取文件扩展名并转换为小写
-        _, file_ext = os.path.splitext(file_path)
-        file_ext = file_ext.lower()
 
         # 根据扩展名选择格式并使用优化的参数
         if file_ext == '.tga':
@@ -1429,7 +1496,7 @@ class FlowmapCanvas(QOpenGLWidget):
         # 计算并显示导出所需时间
         elapsed_time = time.time() - start_time
         print(f"已导出Flowmap到: {file_path}，耗时: {elapsed_time:.2f}秒")
-        
+
     # 保留旧函数名以保持兼容性，但内部调用新函数
     def export_to_tga(self, file_path, target_size=None, use_bilinear=True):
         """兼容旧版API，实际调用export_flowmap方法"""
@@ -1843,15 +1910,15 @@ class FlowmapCanvas(QOpenGLWidget):
             self.window_width = self.width() or 800
             self.window_height = self.height() or 600
             print(f"初始化窗口大小：{self.window_width}x{self.window_height}")
-        
+
         # 检查纹理尺寸有效性
         if self.texture_size[0] <= 0 or self.texture_size[1] <= 0:
             print("警告：纹理尺寸无效")
             return
-            
+
         # 计算纹理的宽高比
         texture_aspect_ratio = float(self.texture_size[0]) / float(self.texture_size[1])
-        
+
         # 根据窗口大小动态调整预览窗口的大小
         if self.window_width < 400 or self.window_height < 300:
             # 对于小窗口，使用更小的预览窗口
@@ -1859,39 +1926,39 @@ class FlowmapCanvas(QOpenGLWidget):
         else:
             # 正常窗口大小下的预览窗口比例
             preview_scale_factor = 0.2  # 预览窗口占窗口的比例
-        
+
         # 基于预览窗口所占窗口宽度的比例计算实际宽度
         preview_width = preview_scale_factor
-        
+
         # 直接基于纹理比例计算高度，保持相同比例
         # 关键修复：使用纹理原始比例，而不是再次应用纹理比例到预览大小计算中
         preview_height = preview_width / texture_aspect_ratio
-        
+
         # 确保预览窗口不会太大或太小
         if preview_height > 0.35:
             preview_height = 0.35
             preview_width = preview_height * texture_aspect_ratio
-        
+
         # 确保预览窗口不会太小
         if preview_width < 0.1:
             preview_width = 0.1
             preview_height = preview_width / texture_aspect_ratio
-        
+
         # 更新预览窗口大小
         self.preview_size = QSizeF(preview_width, preview_height)
-        
+
         # 添加适当的边距
         margin = 0.01  # 窗口边距
-        
+
         # 放置预览窗口在右下角
         right_margin = 1.0 - preview_width - margin
         bottom_margin = 1.0 - preview_height - margin
-        
+
         # 设置预览窗口位置
         self.preview_pos = QPointF(right_margin, bottom_margin)
-        
+
         print(f"预览窗口更新：宽度={preview_width:.3f}，高度={preview_height:.3f}，宽高比={preview_width/preview_height:.3f}，纹理比例={texture_aspect_ratio:.3f}")
-        
+
         # 强制更新
         self.update()
 
